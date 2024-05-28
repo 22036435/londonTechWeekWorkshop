@@ -1,0 +1,108 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif; /* Default font for the entire body */
+}
+
+canvas {
+    display: block;
+}
+
+.arrow-keys-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif; /* Ensure same font family */
+}
+
+.arrow-keys {
+    position: relative;
+    width: 120px; /* Set a width for the container */
+    height: 80px; /* Set a height for the container */
+    margin: 0 auto; /* Center the container */
+}
+
+.arrow {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 24px;
+    border-radius: 5px;
+    transition: background-color 0.1s, color 0.1s;
+    position: absolute;
+}
+
+#arrow-up {
+    top: 0;
+    left: 40px; /* Centered horizontally */
+}
+
+#arrow-left {
+    top: 40px;
+    left: 0;
+}
+
+#arrow-down {
+    top: 40px;
+    left: 40px; /* Centered horizontally */
+}
+
+#arrow-right {
+    top: 40px;
+    left: 80px;
+}
+
+.arrow.pressed {
+    background-color: white;
+    color: black;
+}
+
+.instruction-text {
+    margin-top: 10px;
+    color: white !important; /* Force the text color to white */
+    font-size: 14px;
+    white-space: nowrap; /* Prevent text wrapping */
+    font-family: Arial, sans-serif; /* Ensure same font family */
+}
+
+.explanation-box {
+    position: absolute;
+    right: 20px;
+    top: 30px;
+    height: 680px;
+    width: 700px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+    color: white;
+    border-radius: 15px; /* Filleted corners */
+    font-size: 14px;
+    z-index: 10;
+    text-align: center;
+}
+
+.exit-vr-button {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background-color: #ff0000;
+    color: #ffffff;
+    font-family: Arial, sans-serif; /* Ensure same font family */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.exit-vr-button:focus {
+    outline: none;
+}
+
+.exit-vr-button:hover {
+    background-color: #cc0000;
+}
