@@ -318,40 +318,6 @@ scene.add(controller2)
 
 const tempMatrix = new THREE.Matrix4()
 
-function handleController(controller) {
-    if (controller.userData.isSelecting) {
-        const userData = controller.userData
-        const delta = 0.1 // Adjust this value to control the speed of movement
-
-        tempMatrix.identity().extractRotation(controller.matrixWorld)
-
-        const direction = new THREE.Vector3(0, 0, -1)
-        direction.applyMatrix4(tempMatrix)
-        direction.multiplyScalar(delta)
-
-        camera.position.add(direction)
-    }
-}
-
-controller1.addEventListener('selectstart', () => {
-    controller1.userData.isSelecting = true
-})
-
-controller1.addEventListener('selectend', () => {
-    controller1.userData.isSelecting = false
-})
-
-controller2.addEventListener('selectstart', () => {
-    controller2.userData.isSelecting = true
-})
-
-controller2.addEventListener('selectend', () => {
-    controller2.userData.isSelecting = false
-})
-
-/**
- * VR Controller Joystick Movement
- */
 let moveForward = false
 let moveBackward = false
 let moveLeft = false
@@ -363,35 +329,40 @@ let zoomOut = false
 
 const joystickThreshold = 0.1
 
-renderer.xr.addEventListener('squeezestart', (event) => {
-    event.target.userData.isSqueezing = true
-})
-
-renderer.xr.addEventListener('squeezeend', (event) => {
-    event.target.userData.isSqueezing = false
-})
-
-renderer.xr.addEventListener('selectstart', (event) => {
-    event.target.userData.isSelecting = true
-})
-
-renderer.xr.addEventListener('selectend', (event) => {
-    event.target.userData.isSelecting = false
-})
-
 controller1.addEventListener('connected', (event) => {
+    const gamepad = event.data.gamepad
+    event.target.userData.gamepad = gamepad
     event.target.userData.handedness = event.data.handedness
-    event.target.userData.gamepad = event.data.gamepad
     event.target.userData.isSelecting = false
     event.target.userData.isSqueezing = false
 })
 
 controller2.addEventListener('connected', (event) => {
+    const gamepad = event.data.gamepad
+    event.target.userData.gamepad = gamepad
     event.target.userData.handedness = event.data.handedness
-    event.target.userData.gamepad = event.data.gamepad
     event.target.userData.isSelecting = false
     event.target.userData.isSqueezing = false
 })
+
+controller1.addEventListener('disconnected', (event) => {
+    delete event.target.userData.gamepad
+})
+
+controller2.addEventListener('disconnected', (event) => {
+    delete event.target.userData.gamepad
+})
+
+function handleController(controller) {
+    if (controller.userData.isSelecting) {
+        const delta = 0.1 // Adjust this value to control the speed of movement
+        tempMatrix.identity().extractRotation(controller.matrixWorld)
+        const direction = new THREE.Vector3(0, 0, -1)
+        direction.applyMatrix4(tempMatrix)
+        direction.multiplyScalar(delta)
+        camera.position.add(direction)
+    }
+}
 
 function handleJoystickMovement(controller) {
     const gamepad = controller.userData.gamepad
@@ -404,23 +375,11 @@ function handleJoystickMovement(controller) {
     moveLeft = x < -joystickThreshold
     moveRight = x > joystickThreshold
 
-    if (gamepad.buttons[0].pressed) {
-        moveUp = true
-    } else if (gamepad.buttons[1].pressed) {
-        moveDown = true
-    } else {
-        moveUp = false
-        moveDown = false
-    }
+    moveUp = gamepad.buttons[0].pressed
+    moveDown = gamepad.buttons[1].pressed
 
-    if (gamepad.buttons[3].pressed) {
-        zoomIn = true
-    } else if (gamepad.buttons[4].pressed) {
-        zoomOut = true
-    } else {
-        zoomIn = false
-        zoomOut = false
-    }
+    zoomIn = gamepad.buttons[3].pressed
+    zoomOut = gamepad.buttons[4].pressed
 }
 
 function applyMovement(delta) {
