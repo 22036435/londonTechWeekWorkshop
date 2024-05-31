@@ -309,6 +309,47 @@ renderer.xr.addEventListener('sessionend', () => {
 renderer.xr.enabled = true // Enable WebXR on the renderer
 
 /**
+ * VR Controller Movement
+ */
+const controller1 = renderer.xr.getController(0)
+const controller2 = renderer.xr.getController(1)
+scene.add(controller1)
+scene.add(controller2)
+
+const tempMatrix = new THREE.Matrix4()
+
+function handleController(controller) {
+    if (controller.userData.isSelecting) {
+        const userData = controller.userData
+        const delta = 0.1 // Adjust this value to control the speed of movement
+
+        tempMatrix.identity().extractRotation(controller.matrixWorld)
+
+        const direction = new THREE.Vector3(0, 0, -1)
+        direction.applyMatrix4(tempMatrix)
+        direction.multiplyScalar(delta)
+
+        camera.position.add(direction)
+    }
+}
+
+controller1.addEventListener('selectstart', () => {
+    controller1.userData.isSelecting = true
+})
+
+controller1.addEventListener('selectend', () => {
+    controller1.userData.isSelecting = false
+})
+
+controller2.addEventListener('selectstart', () => {
+    controller2.userData.isSelecting = true
+})
+
+controller2.addEventListener('selectend', () => {
+    controller2.userData.isSelecting = false
+})
+
+/**
  * Animate
  */
 const clock = new THREE.Clock()
@@ -326,6 +367,10 @@ const tick = () => {
     if (mixer) {
         mixer.update(delta)
     }
+
+    // Handle controller input for movement
+    handleController(controller1)
+    handleController(controller2)
 
     // Render
     renderer.render(scene, camera)
