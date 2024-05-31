@@ -262,9 +262,7 @@ window.addEventListener('resize', () => {
  */
 // Base camera
 const camera = new THREE.PerspectiveCamera(45, sizes.width / sizes.height, 0.1, 1000)
-camera.position.x = -60
-camera.position.y = 50
-camera.position.z = 148.19
+camera.position.set(-60, 50, 148.19)
 scene.add(camera)
 
 // Controls
@@ -280,7 +278,6 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 4))
-renderer.xr.enabled = true // Enable WebXR on the renderer
 
 document.body.appendChild(VRButton.createButton(renderer)) // Add the VRButton to the document
 
@@ -298,6 +295,7 @@ exitVRButton.onclick = () => {
 
 document.body.appendChild(exitVRButton)
 
+
 // Show the exit button when entering VR
 renderer.xr.addEventListener('sessionstart', () => {
     exitVRButton.style.display = 'block'
@@ -307,6 +305,8 @@ renderer.xr.addEventListener('sessionstart', () => {
 renderer.xr.addEventListener('sessionend', () => {
     exitVRButton.style.display = 'none'
 })
+
+renderer.xr.enabled = true // Enable WebXR on the renderer
 
 /**
  * Animate
@@ -320,7 +320,7 @@ const tick = () => {
     controls.update()
 
     // Update materials
-    firefliesMaterial.uniforms.uTime.value = delta
+    firefliesMaterial.uniforms.uTime.value += delta
 
     // Update mixer if initialized
     if (mixer) {
