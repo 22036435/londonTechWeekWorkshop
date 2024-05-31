@@ -330,17 +330,15 @@ let zoomOut = false
 const joystickThreshold = 0.1
 
 controller1.addEventListener('connected', (event) => {
-    const gamepad = event.data.gamepad
-    event.target.userData.gamepad = gamepad
     event.target.userData.handedness = event.data.handedness
+    event.target.userData.gamepad = event.data.gamepad
     event.target.userData.isSelecting = false
     event.target.userData.isSqueezing = false
 })
 
 controller2.addEventListener('connected', (event) => {
-    const gamepad = event.data.gamepad
-    event.target.userData.gamepad = gamepad
     event.target.userData.handedness = event.data.handedness
+    event.target.userData.gamepad = event.data.gamepad
     event.target.userData.isSelecting = false
     event.target.userData.isSqueezing = false
 })
