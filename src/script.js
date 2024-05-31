@@ -350,6 +350,98 @@ controller2.addEventListener('selectend', () => {
 })
 
 /**
+ * VR Controller Joystick Movement
+ */
+let moveForward = false
+let moveBackward = false
+let moveLeft = false
+let moveRight = false
+let moveUp = false
+let moveDown = false
+let zoomIn = false
+let zoomOut = false
+
+const joystickThreshold = 0.1
+
+renderer.xr.addEventListener('squeezestart', (event) => {
+    event.target.userData.isSqueezing = true
+})
+
+renderer.xr.addEventListener('squeezeend', (event) => {
+    event.target.userData.isSqueezing = false
+})
+
+renderer.xr.addEventListener('selectstart', (event) => {
+    event.target.userData.isSelecting = true
+})
+
+renderer.xr.addEventListener('selectend', (event) => {
+    event.target.userData.isSelecting = false
+})
+
+controller1.addEventListener('connected', (event) => {
+    event.target.userData.handedness = event.data.handedness
+    event.target.userData.gamepad = event.data.gamepad
+    event.target.userData.isSelecting = false
+    event.target.userData.isSqueezing = false
+})
+
+controller2.addEventListener('connected', (event) => {
+    event.target.userData.handedness = event.data.handedness
+    event.target.userData.gamepad = event.data.gamepad
+    event.target.userData.isSelecting = false
+    event.target.userData.isSqueezing = false
+})
+
+function handleJoystickMovement(controller) {
+    const gamepad = controller.userData.gamepad
+    if (!gamepad) return
+
+    const [x, y] = gamepad.axes
+
+    moveForward = y < -joystickThreshold
+    moveBackward = y > joystickThreshold
+    moveLeft = x < -joystickThreshold
+    moveRight = x > joystickThreshold
+
+    if (gamepad.buttons[0].pressed) {
+        moveUp = true
+    } else if (gamepad.buttons[1].pressed) {
+        moveDown = true
+    } else {
+        moveUp = false
+        moveDown = false
+    }
+
+    if (gamepad.buttons[3].pressed) {
+        zoomIn = true
+    } else if (gamepad.buttons[4].pressed) {
+        zoomOut = true
+    } else {
+        zoomIn = false
+        zoomOut = false
+    }
+}
+
+function applyMovement(delta) {
+    const moveSpeed = 5 * delta
+    const zoomSpeed = 2 * delta
+
+    const moveVector = new THREE.Vector3()
+    if (moveForward) moveVector.z -= moveSpeed
+    if (moveBackward) moveVector.z += moveSpeed
+    if (moveLeft) moveVector.x -= moveSpeed
+    if (moveRight) moveVector.x += moveSpeed
+    if (moveUp) moveVector.y += moveSpeed
+    if (moveDown) moveVector.y -= moveSpeed
+    if (zoomIn) camera.position.addScalar(-zoomSpeed)
+    if (zoomOut) camera.position.addScalar(zoomSpeed)
+
+    moveVector.applyQuaternion(camera.quaternion)
+    camera.position.add(moveVector)
+}
+
+/**
  * Animate
  */
 const clock = new THREE.Clock()
@@ -371,6 +463,13 @@ const tick = () => {
     // Handle controller input for movement
     handleController(controller1)
     handleController(controller2)
+
+    // Handle joystick movement
+    handleJoystickMovement(controller1)
+    handleJoystickMovement(controller2)
+
+    // Apply movement
+    applyMovement(delta)
 
     // Render
     renderer.render(scene, camera)
