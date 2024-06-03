@@ -6,6 +6,7 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton.js'
 import gsap from 'gsap'
 import firefliesVertexShader from './shaders/fireflies/vertex.glsl'
 import firefliesFragmentShader from './shaders/fireflies/fragment.glsl'
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory';
 // import GUI from 'lil-gui'
 
 /**
@@ -279,143 +280,85 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 4))
 
-document.body.appendChild(VRButton.createButton(renderer)) // Add the VRButton to the document
-
-// Custom button to exit VR
-const exitVRButton = document.createElement('button')
-exitVRButton.className = 'exit-vr-button'
-exitVRButton.innerText = 'Exit VR'
-exitVRButton.style.display = 'none' // Hide the button initially
-
-exitVRButton.onclick = () => {
-    if (renderer.xr.isPresenting) {
-        renderer.xr.getSession().end()
+/**
+ * VR
+ */
+function onSelectStart(event) {
+    const controller = event.target;
+    const intersections = getIntersections(controller);
+    
+    if (intersections.length > 0) {
+        const intersection = intersections[0];
+        const object = intersection.object;
+        object.material.emissive.b = 1;
+        controller.userData.selected = object;
     }
 }
 
-document.body.appendChild(exitVRButton)
+function onSelectEnd(event) {
+    const controller = event.target;
 
+    if (controller.userData.selected !== undefined) {
+        const object = controller.userData.selected;
+        object.material.emissive.b = 0;
+        controller.userData.selected = undefined;
+    }
+}
 
-// Show the exit button when entering VR
-renderer.xr.addEventListener('sessionstart', () => {
-    exitVRButton.style.display = 'block'
-})
+function getIntersections(controller) {
+    const tempMatrix = new THREE.Matrix4();
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
 
-// Hide the exit button when exiting VR
-renderer.xr.addEventListener('sessionend', () => {
-    exitVRButton.style.display = 'none'
-})
+    const raycaster = new THREE.Raycaster();
+    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-renderer.xr.enabled = true // Enable WebXR on the renderer
+    return raycaster.intersectObjects(scene.children, false);
+}
 
-/**
- * VR Controller Movement
- */
-// controllers
+const controller1 = renderer.xr.getController(0);
+const controller2 = renderer.xr.getController(1);
 
-controller1 = renderer.xr.getController( 0 );
-controller1.addEventListener( 'selectstart', onSelectStart );
-controller1.addEventListener( 'selectend', onSelectEnd );
-scene.add( controller1 );
+controller1.addEventListener('selectstart', onSelectStart);
+controller1.addEventListener('selectend', onSelectEnd);
+controller2.addEventListener('selectstart', onSelectStart);
+controller2.addEventListener('selectend', onSelectEnd);
 
-controller2 = renderer.xr.getController( 1 );
-controller2.addEventListener( 'selectstart', onSelectStart );
-controller2.addEventListener( 'selectend', onSelectEnd );
-scene.add( controller2 );
+scene.add(controller1);
+scene.add(controller2);
 
 const controllerModelFactory = new XRControllerModelFactory();
 
-controllerGrip1 = renderer.xr.getControllerGrip( 0 );
-controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
-scene.add( controllerGrip1 );
+const controllerGrip1 = renderer.xr.getControllerGrip(0);
+controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+scene.add(controllerGrip1);
 
-controllerGrip2 = renderer.xr.getControllerGrip( 1 );
-controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
-scene.add( controllerGrip2 );
+const controllerGrip2 = renderer.xr.getControllerGrip(1);
+controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+scene.add(controllerGrip2);
 
-/*
-const tempMatrix = new THREE.Matrix4()
+renderer.xr.addEventListener('sessionstart', () => {
+    exitVRButton.style.display = 'block';
+});
 
-let moveForward = false
-let moveBackward = false
-let moveLeft = false
-let moveRight = false
-let moveUp = false
-let moveDown = false
-let zoomIn = false
-let zoomOut = false
+renderer.xr.addEventListener('sessionend', () => {
+    exitVRButton.style.display = 'none';
+});
+document.body.appendChild(VRButton.createButton(renderer));
 
-const joystickThreshold = 0.1
+const exitVRButton = document.createElement('button');
+exitVRButton.className = 'exit-vr-button';
+exitVRButton.innerText = 'Exit VR';
+exitVRButton.style.display = 'none'; // Hide the button initially
 
-controller1.addEventListener('connected', (event) => {
-    event.target.userData.handedness = event.data.handedness
-    event.target.userData.gamepad = event.data.gamepad
-    event.target.userData.isSelecting = false
-    event.target.userData.isSqueezing = false
-})
-
-controller2.addEventListener('connected', (event) => {
-    event.target.userData.handedness = event.data.handedness
-    event.target.userData.gamepad = event.data.gamepad
-    event.target.userData.isSelecting = false
-    event.target.userData.isSqueezing = false
-})
-
-controller1.addEventListener('disconnected', (event) => {
-    delete event.target.userData.gamepad
-})
-
-controller2.addEventListener('disconnected', (event) => {
-    delete event.target.userData.gamepad
-})
-
-function handleController(controller) {
-    if (controller.userData.isSelecting) {
-        const delta = 0.1 // Adjust this value to control the speed of movement
-        tempMatrix.identity().extractRotation(controller.matrixWorld)
-        const direction = new THREE.Vector3(0, 0, -1)
-        direction.applyMatrix4(tempMatrix)
-        direction.multiplyScalar(delta)
-        camera.position.add(direction)
+exitVRButton.onclick = () => {
+    if (renderer.xr.isPresenting) {
+        renderer.xr.getSession().end();
     }
-}
+};
 
-function handleJoystickMovement(controller) {
-    const gamepad = controller.userData.gamepad
-    if (!gamepad) return
+document.body.appendChild(exitVRButton);
 
-    const [x, y] = gamepad.axes
-
-    moveForward = y < -joystickThreshold
-    moveBackward = y > joystickThreshold
-    moveLeft = x < -joystickThreshold
-    moveRight = x > joystickThreshold
-
-    moveUp = gamepad.buttons[0].pressed
-    moveDown = gamepad.buttons[1].pressed
-
-    zoomIn = gamepad.buttons[3].pressed
-    zoomOut = gamepad.buttons[4].pressed
-}
-
-function applyMovement(delta) {
-    const moveSpeed = 5 * delta
-    const zoomSpeed = 2 * delta
-
-    const moveVector = new THREE.Vector3()
-    if (moveForward) moveVector.z -= moveSpeed
-    if (moveBackward) moveVector.z += moveSpeed
-    if (moveLeft) moveVector.x -= moveSpeed
-    if (moveRight) moveVector.x += moveSpeed
-    if (moveUp) moveVector.y += moveSpeed
-    if (moveDown) moveVector.y -= moveSpeed
-    if (zoomIn) camera.position.addScalar(-zoomSpeed)
-    if (zoomOut) camera.position.addScalar(zoomSpeed)
-
-    moveVector.applyQuaternion(camera.quaternion)
-    camera.position.add(moveVector)
-}
-*/
 /**
  * Animate
  */
