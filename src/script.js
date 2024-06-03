@@ -311,11 +311,29 @@ renderer.xr.enabled = true // Enable WebXR on the renderer
 /**
  * VR Controller Movement
  */
-const controller1 = renderer.xr.getController(0)
-const controller2 = renderer.xr.getController(1)
-scene.add(controller1)
-scene.add(controller2)
+// controllers
 
+controller1 = renderer.xr.getController( 0 );
+controller1.addEventListener( 'selectstart', onSelectStart );
+controller1.addEventListener( 'selectend', onSelectEnd );
+scene.add( controller1 );
+
+controller2 = renderer.xr.getController( 1 );
+controller2.addEventListener( 'selectstart', onSelectStart );
+controller2.addEventListener( 'selectend', onSelectEnd );
+scene.add( controller2 );
+
+const controllerModelFactory = new XRControllerModelFactory();
+
+controllerGrip1 = renderer.xr.getControllerGrip( 0 );
+controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+scene.add( controllerGrip1 );
+
+controllerGrip2 = renderer.xr.getControllerGrip( 1 );
+controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+scene.add( controllerGrip2 );
+
+/*
 const tempMatrix = new THREE.Matrix4()
 
 let moveForward = false
@@ -397,7 +415,7 @@ function applyMovement(delta) {
     moveVector.applyQuaternion(camera.quaternion)
     camera.position.add(moveVector)
 }
-
+*/
 /**
  * Animate
  */
@@ -418,15 +436,15 @@ const tick = () => {
     }
 
     // Handle controller input for movement
-    handleController(controller1)
-    handleController(controller2)
+    //handleController(controller1)
+    //handleController(controller2)
 
     // Handle joystick movement
-    handleJoystickMovement(controller1)
-    handleJoystickMovement(controller2)
+    //handleJoystickMovement(controller1)
+    //handleJoystickMovement(controller2)
 
     // Apply movement
-    applyMovement(delta)
+    //applyMovement(delta)
 
     // Render
     renderer.render(scene, camera)
