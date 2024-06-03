@@ -200,19 +200,6 @@ gltfLoader.load('WORKSHOP.glb', (gltf) => {
     });
 });
 
-document.addEventListener('keydown', (event) => {
-    const key = event.key;
-    const explanationBox = document.getElementById('explanation-box');
-
-    if (explanationBox) {
-        if (key === 'ArrowUp' || key === 'ArrowLeft' || key === 'ArrowRight') {
-            explanationBox.style.display = 'none';
-        } else if (key === 'ArrowDown') {
-            explanationBox.style.display = 'block';
-        }
-    }
-});
-
 /**
  * Sizes
  */
@@ -281,38 +268,13 @@ renderer.xr.addEventListener('sessionend', () => {
 /**
  * VR Controllers
  */
-function onSelectStart(event) {
-    const controller = event.target;
-    const intersections = getIntersections(controller);
+const dolly = new THREE.Object3D();
+dolly.position.set(0, 1.6, 0);
+scene.add(dolly);
+dolly.add(camera);
 
-    if (intersections.length > 0) {
-        const intersection = intersections[0];
-        const object = intersection.object;
-        object.material.emissive.b = 1;
-        controller.userData.selected = object;
-    }
-}
-
-function onSelectEnd(event) {
-    const controller = event.target;
-
-    if (controller.userData.selected !== undefined) {
-        const object = controller.userData.selected;
-        object.material.emissive.b = 0;
-        controller.userData.selected = undefined;
-    }
-}
-
-function getIntersections(controller) {
-    const tempMatrix = new THREE.Matrix4();
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
-
-    return raycaster.intersectObjects(scene.children, false);
-}
+const dummyCam = new THREE.Object3D();
+camera.add(dummyCam);
 
 const controller1 = renderer.xr.getController(0);
 const controller2 = renderer.xr.getController(1);
@@ -335,104 +297,23 @@ const controllerGrip2 = renderer.xr.getControllerGrip(1);
 controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
 scene.add(controllerGrip2);
 
-// Define movement variables
-let moveForward = false;
-let moveBackward = false;
-let moveLeft = false;
-let moveRight = false;
-let moveUp = false;
-let moveDown = false;
-let zoomIn = false;
-let zoomOut = false;
-
-function onSqueezeStart(event) {
+function onSelectStart(event) {
     const controller = event.target;
-    controller.userData.isSqueezing = true;
+    controller.userData.selectPressed = true;
 }
 
-function onSqueezeEnd(event) {
+function onSelectEnd(event) {
     const controller = event.target;
-    controller.userData.isSqueezing = false;
+    controller.userData.selectPressed = false;
 }
 
-function handleController(controller) {
-    if (controller.userData.isSelecting) {
-        const delta = 0.1; // Adjust this value to control the speed of movement
+function handleController(controller, delta) {
+    if (controller.userData.selectPressed) {
+        const speed = 2;
         const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(controller.quaternion);
-        camera.position.add(direction.multiplyScalar(delta));
-    }
-    if (controller.userData.isSqueezing) {
-        const delta = 0.1; // Adjust this value to control the speed of movement
-        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(controller.quaternion);
-        camera.position.add(direction.multiplyScalar(delta));
+        dolly.position.add(direction.multiplyScalar(speed * delta));
     }
 }
-
-function handleJoystickMovement(controller) {
-    const gamepad = controller.userData.gamepad;
-    if (!gamepad) return;
-
-    const [x, y] = gamepad.axes;
-
-    moveForward = y < -0.1;
-    moveBackward = y > 0.1;
-    moveLeft = x < -0.1;
-    moveRight = x > 0.1;
-
-    // Handle zoom in and out with the primary buttons
-    zoomIn = gamepad.buttons[0].pressed;
-    zoomOut = gamepad.buttons[1].pressed;
-
-    // Handle move up and down with secondary buttons
-    moveUp = gamepad.buttons[3].pressed;
-    moveDown = gamepad.buttons[4].pressed;
-}
-
-function applyMovement(delta) {
-    const moveSpeed = 5 * delta;
-    const zoomSpeed = 2 * delta;
-    const moveVector = new THREE.Vector3();
-
-    if (moveForward) moveVector.z -= moveSpeed;
-    if (moveBackward) moveVector.z += moveSpeed;
-    if (moveLeft) moveVector.x -= moveSpeed;
-    if (moveRight) moveVector.x += moveSpeed;
-    if (moveUp) moveVector.y += moveSpeed;
-    if (moveDown) moveVector.y -= moveSpeed;
-
-    camera.position.add(moveVector.applyQuaternion(camera.quaternion));
-
-    if (zoomIn) {
-        camera.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(zoomSpeed));
-    }
-    if (zoomOut) {
-        camera.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(-zoomSpeed));
-    }
-}
-
-controller1.addEventListener('connected', (event) => {
-    const controller = event.target;
-    controller.userData.handedness = event.data.handedness;
-    controller.userData.gamepad = event.data.gamepad;
-    controller.userData.isSelecting = false;
-    controller.userData.isSqueezing = false;
-});
-
-controller2.addEventListener('connected', (event) => {
-    const controller = event.target;
-    controller.userData.handedness = event.data.handedness;
-    controller.userData.gamepad = event.data.gamepad;
-    controller.userData.isSelecting = false;
-    controller.userData.isSqueezing = false;
-});
-
-controller1.addEventListener('disconnected', (event) => {
-    delete event.target.userData.gamepad;
-});
-
-controller2.addEventListener('disconnected', (event) => {
-    delete event.target.userData.gamepad;
-});
 
 const clock = new THREE.Clock();
 
@@ -448,11 +329,8 @@ const tick = () => {
         mixer.update(delta);
     }
 
-    handleController(controller1);
-    handleController(controller2);
-    handleJoystickMovement(controller1);
-    handleJoystickMovement(controller2);
-    applyMovement(delta);
+    handleController(controller1, delta);
+    handleController(controller2, delta);
 
     renderer.render(scene, camera);
 
