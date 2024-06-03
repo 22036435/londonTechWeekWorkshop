@@ -434,6 +434,8 @@ controller2.addEventListener('disconnected', (event) => {
     delete event.target.userData.gamepad;
 });
 
+const clock = new THREE.Clock();
+
 // Update tick function to handle movement
 const tick = () => {
     const delta = clock.getDelta();
