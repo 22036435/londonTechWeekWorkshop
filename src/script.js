@@ -335,11 +335,106 @@ const controllerGrip2 = renderer.xr.getControllerGrip(1);
 controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
 scene.add(controllerGrip2);
 
-/**
- * Animate
- */
-const clock = new THREE.Clock();
+// Define movement variables
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+let moveUp = false;
+let moveDown = false;
+let zoomIn = false;
+let zoomOut = false;
 
+function onSqueezeStart(event) {
+    const controller = event.target;
+    controller.userData.isSqueezing = true;
+}
+
+function onSqueezeEnd(event) {
+    const controller = event.target;
+    controller.userData.isSqueezing = false;
+}
+
+function handleController(controller) {
+    if (controller.userData.isSelecting) {
+        const delta = 0.1; // Adjust this value to control the speed of movement
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(controller.quaternion);
+        camera.position.add(direction.multiplyScalar(delta));
+    }
+    if (controller.userData.isSqueezing) {
+        const delta = 0.1; // Adjust this value to control the speed of movement
+        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(controller.quaternion);
+        camera.position.add(direction.multiplyScalar(delta));
+    }
+}
+
+function handleJoystickMovement(controller) {
+    const gamepad = controller.userData.gamepad;
+    if (!gamepad) return;
+
+    const [x, y] = gamepad.axes;
+
+    moveForward = y < -0.1;
+    moveBackward = y > 0.1;
+    moveLeft = x < -0.1;
+    moveRight = x > 0.1;
+
+    // Handle zoom in and out with the primary buttons
+    zoomIn = gamepad.buttons[0].pressed;
+    zoomOut = gamepad.buttons[1].pressed;
+
+    // Handle move up and down with secondary buttons
+    moveUp = gamepad.buttons[3].pressed;
+    moveDown = gamepad.buttons[4].pressed;
+}
+
+function applyMovement(delta) {
+    const moveSpeed = 5 * delta;
+    const zoomSpeed = 2 * delta;
+    const moveVector = new THREE.Vector3();
+
+    if (moveForward) moveVector.z -= moveSpeed;
+    if (moveBackward) moveVector.z += moveSpeed;
+    if (moveLeft) moveVector.x -= moveSpeed;
+    if (moveRight) moveVector.x += moveSpeed;
+    if (moveUp) moveVector.y += moveSpeed;
+    if (moveDown) moveVector.y -= moveSpeed;
+
+    camera.position.add(moveVector.applyQuaternion(camera.quaternion));
+
+    if (zoomIn) {
+        camera.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(zoomSpeed));
+    }
+    if (zoomOut) {
+        camera.position.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(-zoomSpeed));
+    }
+}
+
+controller1.addEventListener('connected', (event) => {
+    const controller = event.target;
+    controller.userData.handedness = event.data.handedness;
+    controller.userData.gamepad = event.data.gamepad;
+    controller.userData.isSelecting = false;
+    controller.userData.isSqueezing = false;
+});
+
+controller2.addEventListener('connected', (event) => {
+    const controller = event.target;
+    controller.userData.handedness = event.data.handedness;
+    controller.userData.gamepad = event.data.gamepad;
+    controller.userData.isSelecting = false;
+    controller.userData.isSqueezing = false;
+});
+
+controller1.addEventListener('disconnected', (event) => {
+    delete event.target.userData.gamepad;
+});
+
+controller2.addEventListener('disconnected', (event) => {
+    delete event.target.userData.gamepad;
+});
+
+// Update tick function to handle movement
 const tick = () => {
     const delta = clock.getDelta();
 
@@ -350,6 +445,12 @@ const tick = () => {
     if (mixer) {
         mixer.update(delta);
     }
+
+    handleController(controller1);
+    handleController(controller2);
+    handleJoystickMovement(controller1);
+    handleJoystickMovement(controller2);
+    applyMovement(delta);
 
     renderer.render(scene, camera);
 
