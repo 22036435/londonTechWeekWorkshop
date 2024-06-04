@@ -171,22 +171,28 @@ gltfLoader.load('WORKSHOP.glb', (gltf) => {
     window.addEventListener('keydown', (event) => {
         const key = event.key.toLowerCase();
         const arrow = document.getElementById(`arrow-${key.replace('arrow', '')}`);
+        const explanationBox = document.getElementById('explanation-box');
         if (arrow) {
             arrow.classList.add('pressed');
         }
+    
 
         switch (event.key) {
             case 'ArrowUp':
                 animateCamera(-3, 53, 50, { x: set2Mesh.position.x - 10, y: set2Mesh.position.y - 5, z: set2Mesh.position.z });
+                explanationBox.style.display = 'none';
                 break;
             case 'ArrowRight':
                 animateCamera(9, 37, 55, { x: set1Mesh.position.x - 10, y: set1Mesh.position.y, z: set1Mesh.position.z });
+                explanationBox.style.display = 'none';
                 break;
             case 'ArrowLeft':
                 animateCamera(10, 35, 55, { x: set3Mesh.position.x + 5, y: set3Mesh.position.y, z: set3Mesh.position.z });
+                explanationBox.style.display = 'none';
                 break;
             case 'ArrowDown':
                 animateCamera(-60, 50, 148.19, { x: entityMesh.position.x + 70, y: entityMesh.position.y - 10, z: entityMesh.position.z });
+                explanationBox.style.display = 'block';
                 break;
         }
     });
@@ -199,6 +205,7 @@ gltfLoader.load('WORKSHOP.glb', (gltf) => {
         }
     });
 });
+
 
 /**
  * Sizes
